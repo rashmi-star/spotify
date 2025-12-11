@@ -1,0 +1,362 @@
+.playerBar {
+  height: 90px;
+  background-color: #181818;
+  border-top: 1px solid #282828;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  z-index: 1000;
+}
+
+.playerContent {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* Now Playing Section */
+.nowPlaying {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 180px;
+  flex: 0 0 30%;
+}
+
+.trackCover {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.mixedIndicator {
+  font-size: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.trackInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.trackName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #ffffff;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trackName:hover {
+  text-decoration: underline;
+}
+
+.mixedTag {
+  display: inline-block;
+  background: #1db954;
+  color: #000000;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.trackArtist {
+  font-size: 12px;
+  color: #b3b3b3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.trackArtist:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.likeBtn {
+  background: transparent;
+  border: none;
+  color: #b3b3b3;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.likeBtn:hover {
+  color: #ffffff;
+}
+
+/* Player Controls Section */
+.playerControls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 722px;
+}
+
+.controlButtons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.controlBtn {
+  background: transparent;
+  border: none;
+  color: #b3b3b3;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  padding: 4px;
+}
+
+.controlBtn:hover {
+  color: #ffffff;
+}
+
+.controlBtn.playPause {
+  width: 32px;
+  height: 32px;
+  background-color: #ffffff;
+  color: #000000;
+  border-radius: 50%;
+  padding: 0;
+}
+
+.controlBtn.playPause:hover {
+  transform: scale(1.1);
+  background-color: #ffffff;
+}
+
+.controlBtn.shuffle.active,
+.controlBtn.repeat.active {
+  color: #1db954;
+}
+
+.progressContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.timeDisplay {
+  font-size: 11px;
+  color: #b3b3b3;
+  min-width: 40px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.progressBarWrapper {
+  flex: 1;
+  position: relative;
+  height: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.progressBar {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+.progressBar::-webkit-slider-track {
+  width: 100%;
+  height: 4px;
+  background: #535353;
+  border-radius: 2px;
+}
+
+.progressBar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: pointer;
+  margin-top: -4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.progressBarWrapper:hover .progressBar::-webkit-slider-thumb {
+  opacity: 1;
+}
+
+.progressBar::-moz-range-track {
+  width: 100%;
+  height: 4px;
+  background: #535353;
+  border-radius: 2px;
+}
+
+.progressBar::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: pointer;
+  border: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.progressBarWrapper:hover .progressBar::-moz-range-thumb {
+  opacity: 1;
+}
+
+/* Player Options Section */
+.playerOptions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 30%;
+  justify-content: flex-end;
+}
+
+.optionBtn {
+  background: transparent;
+  border: none;
+  color: #b3b3b3;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.optionBtn:hover {
+  color: #ffffff;
+}
+
+.volumeControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 125px;
+}
+
+.volumeBtn {
+  background: transparent;
+  border: none;
+  color: #b3b3b3;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.volumeBtn:hover {
+  color: #ffffff;
+}
+
+.volumeSliderWrapper {
+  flex: 1;
+  position: relative;
+  height: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.volumeSlider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+.volumeSlider::-webkit-slider-track {
+  width: 100%;
+  height: 4px;
+  background: #535353;
+  border-radius: 2px;
+}
+
+.volumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: pointer;
+  margin-top: -4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.volumeSliderWrapper:hover .volumeSlider::-webkit-slider-thumb {
+  opacity: 1;
+}
+
+.volumeSlider::-moz-range-track {
+  width: 100%;
+  height: 4px;
+  background: #535353;
+  border-radius: 2px;
+}
+
+.volumeSlider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: pointer;
+  border: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.volumeSliderWrapper:hover .volumeSlider::-moz-range-thumb {
+  opacity: 1;
+}
+

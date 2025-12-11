@@ -1,0 +1,197 @@
+.sidebar {
+  width: 240px;
+  background-color: #000000;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-right: 1px solid #121212;
+}
+
+.sidebarHeader {
+  padding: 16px 12px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.logoIcon {
+  font-size: 32px;
+  color: #1db954;
+}
+
+.logoText {
+  font-size: 24px;
+}
+
+.sidebarNav {
+  padding: 8px 12px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #b3b3b3;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin-bottom: 4px;
+}
+
+.navItem:hover {
+  color: #ffffff;
+  background-color: #1a1a1a;
+}
+
+.navItem.active {
+  color: #ffffff;
+  background-color: #1a1a1a;
+}
+
+.navIcon {
+  font-size: 20px;
+}
+
+.sidebarPlaylists {
+  flex: 1;
+  padding: 8px 12px;
+  overflow-y: auto;
+  margin-top: 24px;
+}
+
+.playlistsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  margin-bottom: 16px;
+}
+
+.playlistAction {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #b3b3b3;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.playlistAction:hover {
+  color: #ffffff;
+}
+
+.playlistIcon {
+  font-size: 16px;
+}
+
+.playlistActions {
+  display: flex;
+  gap: 16px;
+}
+
+.actionIcon {
+  font-size: 16px;
+  color: #b3b3b3;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.actionIcon:hover {
+  color: #ffffff;
+}
+
+.playlistsFilter {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filterBtn {
+  background: transparent;
+  border: none;
+  color: #b3b3b3;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filterBtn:hover {
+  color: #ffffff;
+  background-color: #1a1a1a;
+}
+
+.filterBtn.active {
+  color: #ffffff;
+  background-color: #333333;
+}
+
+.playlistsList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.playlistItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 4px;
+  color: #b3b3b3;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.playlistItem:hover {
+  color: #ffffff;
+  background-color: #1a1a1a;
+}
+
+.playlistItemIcon {
+  font-size: 16px;
+  color: #1db954;
+}
+
+.playlistItemCover {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+}
+
+/* Scrollbar styling */
+.sidebar::-webkit-scrollbar,
+.sidebarPlaylists::-webkit-scrollbar {
+  width: 12px;
+}
+
+.sidebar::-webkit-scrollbar-track,
+.sidebarPlaylists::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.sidebarPlaylists::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 6px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover,
+.sidebarPlaylists::-webkit-scrollbar-thumb:hover {
+  background: #555555;
+}
+
