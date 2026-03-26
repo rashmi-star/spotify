@@ -38,25 +38,9 @@ export async function POST(request) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey)
-    // Try different model names - some APIs use different naming
-    let model
-    const modelNames = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
-    
-    for (const modelName of modelNames) {
-      try {
-        model = genAI.getGenerativeModel({ model: modelName })
-        console.log(`✅ Using Gemini model: ${modelName}`)
-        break
-      } catch (e) {
-        console.log(`⚠️ Model ${modelName} not available, trying next...`)
-        continue
-      }
-    }
-    
-    if (!model) {
-      // If all models fail, use fallback
-      throw new Error('No Gemini models available')
-    }
+    // Use gemini-2.5-flash (latest stable model)
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+    console.log('✅ Using Gemini model: gemini-2.5-flash')
 
     const languageInstruction = targetLanguage !== 'English'
       ? `\n\nCRITICAL: Respond ONLY in ${targetLanguage} language (${languageCode}). Do NOT use English.`

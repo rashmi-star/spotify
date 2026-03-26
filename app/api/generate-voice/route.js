@@ -55,11 +55,20 @@ export async function POST(request) {
       console.warn('⚠️ The voice may not sound correct for Tamil songs.')
     }
 
+    // Check if text contains SSML tags
+    const hasSSML = text.includes('<speak>') || text.includes('<break') || text.includes('<emphasis')
+    
     // Build request body - multilingual model auto-detects language from text
     const requestBody = {
       text: text,
       model_id: modelId,
       voice_settings: finalVoiceSettings
+    }
+    
+    // Enable SSML if detected
+    if (hasSSML) {
+      requestBody.enable_logging = false // Disable logging for better performance
+      console.log('✨ SSML detected - enhanced prosody enabled')
     }
     
     // Explicitly set language_code for multilingual model (safer than auto-detect)

@@ -1,8 +1,11 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { FaMicrophone, FaPlay, FaStop, FaDownload, FaCloudSun, FaNewspaper } from 'react-icons/fa'
+import { FaMicrophone, FaPlay, FaStop, FaDownload, FaCloudSun, FaNewspaper, FaTrophy, FaFire } from 'react-icons/fa'
 import { useMusicPlayer } from '@/contexts/MusicPlayerContext'
+import InteractiveDemo from './InteractiveDemo'
+import LiveStats from './LiveStats'
+import VoiceVisualizer from './VoiceVisualizer'
 import styles from './AmbientVoiceOverlay.module.css'
 
 const AmbientVoiceOverlay = ({ onTrackCreated }) => {
@@ -13,11 +16,82 @@ const AmbientVoiceOverlay = ({ onTrackCreated }) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [mixedAudioUrl, setMixedAudioUrl] = useState(null)
   const [step, setStep] = useState('input') // input, refining, generating, ready
+  const [conversationHistory, setConversationHistory] = useState([]) // Track conversation
+  const [creativeMode, setCreativeMode] = useState('conversational') // conversational, story, emotion
+  const [detectedEmotion, setDetectedEmotion] = useState(null)
+  const [voicePersonality, setVoicePersonality] = useState(null)
+  const [stats, setStats] = useState({ messages: 0, mixes: 0, avgPlacement: 3.2 })
+  const [achievements, setAchievements] = useState([])
+  const [showCelebration, setShowCelebration] = useState(false)
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef(null)
   
   const { currentTrack } = useMusicPlayer()
   const audioContextRef = useRef(null)
   const voiceSourceRef = useRef(null)
   const musicSourceRef = useRef(null)
+
+  // Initialize Speech Recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition()
+        recognition.continuous = false
+        recognition.interimResults = false
+        recognition.lang = 'en-US'
+
+        recognition.onstart = () => {
+          setIsListening(true)
+          console.log('🎤 Speech recognition started')
+        }
+
+        recognition.onresult = async (event) => {
+          const transcript = event.results[0][0].transcript
+          console.log('🎤 Speech recognized:', transcript)
+          setMessage(transcript)
+          setIsListening(false)
+          
+          // Get conversational response from Gemini
+          await handleConversationalResponse(transcript)
+        }
+
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error)
+          setIsListening(false)
+          if (event.error === 'no-speech') {
+            alert('No speech detected. Please try again.')
+          }
+        }
+
+        recognition.onend = () => {
+          setIsListening(false)
+        }
+
+        recognitionRef.current = recognition
+      }
+    }
+  }, [])
+
+  const startListening = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.start()
+      } catch (error) {
+        console.error('Error starting speech recognition:', error)
+        alert('Speech recognition not available. Please use text input.')
+      }
+    } else {
+      alert('Speech recognition not supported in this browser. Please use Chrome or Edge.')
+    }
+  }
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+      setIsListening(false)
+    }
+  }
 
   const availableSongs = [
     { 
@@ -52,8 +126,71 @@ const AmbientVoiceOverlay = ({ onTrackCreated }) => {
 
   const [selectedSong, setSelectedSong] = useState(availableSongs[0])
 
-  const handleRefineMessage = async () => {
-    if (!message.trim()) return
+  // NEW: Get conversational response from Gemini (for voice input)
+  const handleConversationalResponse = async (userInput) => {
+    if (!userInput.trim()) return
+
+    setIsProcessing(true)
+    setStep('refining')
+
+    try {
+      const targetLanguage = selectedSong.language || 'English'
+      const languageCode = selectedSong.languageCode || 'en'
+      
+      console.log(`💬 Getting conversational response for: "${userInput}"`)
+      console.log(`🌍 Detected song language: ${targetLanguage}`)
+      
+      // Get Gemini's conversational response
+      const response = await fetch('/api/conversational-response', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          message: userInput,
+          context: `This will be overlaid on "${selectedSong.title}" by ${selectedSong.artist}`,
+          targetLanguage: targetLanguage,
+          languageCode: languageCode,
+          conversationHistory: conversationHistory.slice(-4) // Last 4 messages for context
+        }),
+      })
+
+      const data = await response.json()
+      if (data.error) throw new Error(data.error)
+
+      console.log('👤 User said:', data.userMessage)
+      console.log('🤖 Gemini responded:', data.response)
+      
+      // Update conversation history
+      setConversationHistory(prev => [...prev, 
+        { role: 'user', content: data.userMessage },
+        { role: 'assistant', content: data.response }
+      ].slice(-6))
+      
+      // Use Gemini's response for voice generation (not user's input)
+      setRefinedMessage(data.response)
+      setStep('refined')
+      
+      // Update stats
+      setStats(prev => ({ ...prev, messages: prev.messages + 1 }))
+      
+      // Check for achievements
+      checkAchievements()
+      
+      // Auto-generate voice after getting response (use Gemini's response)
+      setTimeout(() => {
+        handleGenerateVoice(data.response)
+      }, 800)
+    } catch (error) {
+      console.error('Error getting conversational response:', error)
+      alert('Failed to get response. Check console for details.')
+      setStep('input')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleRefineMessage = async (inputMessage = null) => {
+    const messageToRefine = inputMessage || message
+    if (!messageToRefine.trim()) return
 
     setIsProcessing(true)
     setStep('refining')
@@ -68,10 +205,11 @@ const AmbientVoiceOverlay = ({ onTrackCreated }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          message,
+          message: messageToRefine,
           context: `This will be overlaid on "${selectedSong.title}" by ${selectedSong.artist}`,
           targetLanguage: targetLanguage,
-          languageCode: languageCode
+          languageCode: languageCode,
+          conversationHistory: conversationHistory.slice(-3) // Last 3 messages for context
         }),
       })
 
@@ -80,13 +218,28 @@ const AmbientVoiceOverlay = ({ onTrackCreated }) => {
 
       console.log('📥 Refined message received:', data.refined)
       console.log('🔍 Debug info:', data.debug)
+      console.log('💬 Conversational:', data.conversational ? 'Yes' : 'No')
       
       if (data.debug && !data.debug.containsTamil && targetLanguage === 'Tamil') {
         console.warn('⚠️ WARNING: Expected Tamil but response appears to be in English!')
       }
 
+      // Update conversation history
+      setConversationHistory(prev => [...prev, messageToRefine, data.refined].slice(-6)) // Keep last 6 items
+      
+      // Update message state if it was passed as parameter
+      if (inputMessage) {
+        setMessage(messageToRefine)
+      }
+      
       setRefinedMessage(data.refined)
       setStep('refined')
+      
+      // Update stats
+      setStats(prev => ({ ...prev, messages: prev.messages + 1 }))
+      
+      // Check for achievements
+      checkAchievements()
     } catch (error) {
       console.error('Error refining message:', error)
       alert('Failed to refine message. Check console for details.')
@@ -96,8 +249,9 @@ const AmbientVoiceOverlay = ({ onTrackCreated }) => {
     }
   }
 
-  const handleGenerateVoice = async () => {
-    if (!refinedMessage) return
+  const handleGenerateVoice = async (textToSpeak = null) => {
+    const text = textToSpeak || refinedMessage
+    if (!text) return
 
     setIsProcessing(true)
     setStep('generating')
@@ -108,6 +262,7 @@ const AmbientVoiceOverlay = ({ onTrackCreated }) => {
         stability: 0.5,
         similarity_boost: 0.75
       }
+      let songAnalysis = { mood: 'calm' }
       
       if (selectedSong && selectedSong.src) {
         try {
@@ -118,10 +273,10 @@ const AmbientVoiceOverlay = ({ onTrackCreated }) => {
           const musicBuffer = await audioContext.decodeAudioData(musicArrayBuffer)
           
           // Analyze song mood
-          const analysis = analyzeSongMood(musicBuffer)
-          voiceSettings = analysis.voiceStyle
+          songAnalysis = analyzeSongMood(musicBuffer)
+          voiceSettings = songAnalysis.voiceStyle
           
-          console.log(`🎤 Adapting voice to "${analysis.mood}" song style`)
+          console.log(`🎤 Adapting voice to "${songAnalysis.mood}" song style`)
         } catch (e) {
           console.log('⚠️ Could not analyze song, using default voice settings')
         }
@@ -132,21 +287,110 @@ const AmbientVoiceOverlay = ({ onTrackCreated }) => {
       const isMultilingual = languageCode !== 'en'
       
       // Verify text is in correct language
-      const isTamilText = /[\u0B80-\u0BFF]/.test(refinedMessage)
+      const isTamilText = /[\u0B80-\u0BFF]/.test(text)
       console.log(`🎤 Generating voice in ${selectedSong.language || 'English'} (code: ${languageCode})`)
       console.log(`🔍 Text language check: Contains Tamil script? ${isTamilText}`)
-      console.log(`📝 Text to speak: "${refinedMessage.substring(0, 100)}..."`)
+      console.log(`📝 Text to speak: "${text.substring(0, 100)}..."`)
       
       if (isMultilingual && !isTamilText) {
         console.warn('⚠️ WARNING: Expected Tamil text but message appears to be in English!')
         console.warn('⚠️ ElevenLabs multilingual model will try to speak English with Tamil accent')
       }
 
+      // 🎨 CREATIVE MODE: Detect emotion and select personality
+      let emotionData = null
+      let personalityData = null
+      
+      try {
+        // Detect emotion from message
+        const emotionResponse = await fetch('/api/emotion-detector', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            songMood: songAnalysis.mood
+          }),
+        })
+        
+        emotionData = await emotionResponse.json()
+        setDetectedEmotion(emotionData)
+        console.log(`🎭 Detected emotion: ${emotionData.emotion} (intensity: ${emotionData.intensity})`)
+        
+        // Select voice personality based on emotion
+        const personalityResponse = await fetch('/api/voice-personality', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            emotion: emotionData.emotion,
+            songMood: songAnalysis.mood,
+            message: text
+          }),
+        })
+        
+        personalityData = await personalityResponse.json()
+        setVoicePersonality(personalityData)
+        console.log(`🎨 Voice personality: ${personalityData.personality} - ${personalityData.description}`)
+        
+        // Update voice settings with personality
+        voiceSettings = { ...voiceSettings, ...personalityData.voiceSettings }
+      } catch (e) {
+        console.log('⚠️ Creative features skipped')
+      }
+
+      // 🎨 CREATIVE MODE: Story generator (optional)
+      let finalText = text
+      
+      if (creativeMode === 'story') {
+        try {
+          const storyResponse = await fetch('/api/story-generator', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: text,
+              songTitle: selectedSong.title,
+              songMood: songAnalysis.mood
+            }),
+          })
+          
+          const storyData = await storyResponse.json()
+          if (storyData.story) {
+            finalText = storyData.story
+            console.log(`📖 Story mode: ${storyData.story}`)
+          }
+        } catch (e) {
+          console.log('⚠️ Story generation skipped')
+        }
+      }
+      
+      // Enhance text with SSML and optimization
+      try {
+        const enhanceResponse = await fetch('/api/enhance-text', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: finalText,
+            mood: songAnalysis.mood || 'calm',
+            songContext: `"${selectedSong.title}" by ${selectedSong.artist}`,
+            targetLanguage: selectedSong.language || 'English',
+            languageCode: languageCode
+          }),
+        })
+        
+        const enhanceData = await enhanceResponse.json()
+        if (enhanceData.enhanced) {
+          finalText = enhanceData.ssml || enhanceData.enhanced
+          console.log(`✨ Enhanced text: ${enhanceData.wordCount} words (optimized: ${enhanceData.optimized})`)
+          console.log(`🎯 SSML enabled: ${enhanceData.ssml ? 'Yes' : 'No'}`)
+        }
+      } catch (e) {
+        console.log('⚠️ Enhancement skipped, using original text')
+      }
+
       const response = await fetch('/api/generate-voice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          text: refinedMessage,
+          text: finalText,
           voiceSettings: voiceSettings,
           languageCode: languageCode,
           isMultilingual: isMultilingual
@@ -253,46 +497,79 @@ const AmbientVoiceOverlay = ({ onTrackCreated }) => {
     return { mood, voiceStyle, avgEnergy, tempo }
   }
 
-  const findSilentMoment = (audioBuffer, startTime = 1, endTime = 15) => {
-    // Analyze audio to find quiet moments (basic silence detection)
-    const channelData = audioBuffer.getChannelData(0) // Use first channel
-    const sampleRate = audioBuffer.sampleRate
-    const windowSize = sampleRate * 0.5 // Check 0.5 second windows
+  const findSilentMoment = async (audioBuffer, startTime = 1, endTime = 15) => {
+    // 🤖 AI-POWERED SILENCE DETECTION
+    // Uses Ollama to intelligently analyze audio and find the best placement
     
-    let quietestTime = 3 // Default fallback
+    try {
+      const channelData = audioBuffer.getChannelData(0) // Use first channel
+      const sampleRate = audioBuffer.sampleRate
+      
+      // Extract audio data for analysis (limit to first 30 seconds for performance)
+      const maxSamples = Math.min(30 * sampleRate, channelData.length)
+      const audioData = Array.from(channelData.slice(0, maxSamples))
+      
+      console.log(`🤖 Using AI to analyze ${audioBuffer.duration.toFixed(2)}s of audio...`)
+      
+      // Call AI-powered silence detection API
+      const response = await fetch('/api/analyze-audio-silence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          audioData: audioData,
+          sampleRate: sampleRate,
+          duration: Math.min(audioBuffer.duration, 30)
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.recommendedTime && data.usedAI) {
+        console.log(`✅ AI Silence Detection: Recommended ${data.recommendedTime.toFixed(2)}s`)
+        console.log(`💭 AI Reasoning: ${data.reasoning}`)
+        console.log(`📊 Confidence: ${data.confidence}%`)
+        
+        // Ensure recommended time is within valid range
+        const validTime = Math.max(startTime, Math.min(endTime, data.recommendedTime))
+        return validTime
+      } else {
+        // Fallback to basic RMS if AI fails
+        console.warn('⚠️ AI analysis failed, using RMS fallback')
+        return findSilentMomentFallback(audioBuffer, startTime, endTime)
+      }
+    } catch (error) {
+      console.error('❌ AI silence detection error:', error)
+      console.log('⚠️ Falling back to basic RMS analysis')
+      return findSilentMomentFallback(audioBuffer, startTime, endTime)
+    }
+  }
+
+  const findSilentMomentFallback = (audioBuffer, startTime = 1, endTime = 15) => {
+    // Fallback: Basic RMS analysis (original method)
+    const channelData = audioBuffer.getChannelData(0)
+    const sampleRate = audioBuffer.sampleRate
+    const windowSize = sampleRate * 0.5
+    
+    let quietestTime = 3
     let lowestVolume = Infinity
     
     const startSample = Math.floor(startTime * sampleRate)
     const endSample = Math.floor(Math.min(endTime, audioBuffer.duration) * sampleRate)
     
-    // Scan through the audio in windows
     for (let i = startSample; i < endSample - windowSize; i += windowSize / 2) {
       let sum = 0
-      
-      // Calculate RMS (root mean square) for this window
       for (let j = 0; j < windowSize && i + j < channelData.length; j++) {
         sum += channelData[i + j] * channelData[i + j]
       }
-      
       const rms = Math.sqrt(sum / windowSize)
-      
-      // Track the quietest moment
       if (rms < lowestVolume) {
         lowestVolume = rms
         quietestTime = i / sampleRate
       }
     }
     
-    console.log(`🎵 Silence Detection: Found quietest moment at ${quietestTime.toFixed(2)}s (volume: ${lowestVolume.toFixed(4)})`)
-    
-    // Only use detected silence if it's significantly quieter
-    if (lowestVolume < 0.1) {
-      return quietestTime
-    }
-    
-    // Fallback to 3 seconds if no clear quiet moment
-    console.log('⚠️ No clear silence found, using default 3s')
-    return 3
+    console.log(`📊 RMS Fallback: Found quietest moment at ${quietestTime.toFixed(2)}s`)
+    return quietestTime
   }
 
   const handleMixAudio = async () => {
@@ -316,10 +593,12 @@ const AmbientVoiceOverlay = ({ onTrackCreated }) => {
       const musicArrayBuffer = await musicResponse.arrayBuffer()
       const musicBuffer = await audioContext.decodeAudioData(musicArrayBuffer)
 
-      // 🎯 DETECT QUIET MOMENT IN MUSIC
-      const voiceStartTime = findSilentMoment(musicBuffer, 1, 15)
-      console.log(`✨ Placing voice at ${voiceStartTime.toFixed(2)}s (intelligent detection)`)
-
+      // 🎯 AI-POWERED SILENCE DETECTION
+      const voiceStartTime = await findSilentMoment(musicBuffer, 1, 15)
+      console.log(`✨ Placing voice at ${voiceStartTime.toFixed(2)}s (AI-powered intelligent detection)`)
+      
+      // Update stats with actual placement time
+      setStats(prev => ({ ...prev, avgPlacement: voiceStartTime }))
 
       // Create offline context for mixing
       const duration = Math.max(voiceStartTime + voiceBuffer.duration + 2, 30) // At least 30 seconds
@@ -382,6 +661,16 @@ const AmbientVoiceOverlay = ({ onTrackCreated }) => {
         }
         onTrackCreated(mixedTrack)
         console.log('✅ Mixed track added to Spotify UI!')
+        
+        // Update stats
+        setStats(prev => ({ ...prev, mixes: prev.mixes + 1 }))
+        
+        // Celebration animation
+        setShowCelebration(true)
+        setTimeout(() => setShowCelebration(false), 3000)
+        
+        // Check for achievements
+        checkAchievements()
       }
     } catch (error) {
       console.error('Error mixing audio:', error)
@@ -465,6 +754,44 @@ const AmbientVoiceOverlay = ({ onTrackCreated }) => {
     setVoiceAudio(null)
     setMixedAudioUrl(null)
     setStep('input')
+    setConversationHistory([]) // Clear conversation history
+    setDetectedEmotion(null)
+    setVoicePersonality(null)
+  }
+
+  const handleQuickAction = (quickMessage) => {
+    setMessage(quickMessage)
+    // Auto-trigger refinement with the quick message directly
+    setTimeout(() => {
+      handleRefineMessage(quickMessage)
+    }, 300)
+  }
+
+  const checkAchievements = () => {
+    const newAchievements = []
+    
+    if (stats.mixes === 1 && !achievements.includes('first-mix')) {
+      newAchievements.push({ id: 'first-mix', text: '🎉 First Mix Created!', icon: '🎵' })
+    }
+    if (stats.mixes === 5 && !achievements.includes('mix-master')) {
+      newAchievements.push({ id: 'mix-master', text: '🔥 Mix Master!', icon: '🏆' })
+    }
+    if (conversationHistory.length >= 5 && !achievements.includes('conversationalist')) {
+      newAchievements.push({ id: 'conversationalist', text: '💬 Conversationalist!', icon: '💬' })
+    }
+    if (detectedEmotion && !achievements.includes('emotion-detector')) {
+      newAchievements.push({ id: 'emotion-detector', text: '🎭 Emotion Detected!', icon: '🎭' })
+    }
+    
+    if (newAchievements.length > 0) {
+      setAchievements(prev => [...prev, ...newAchievements.map(a => a.id)])
+      // Show achievement notification
+      newAchievements.forEach(achievement => {
+        setTimeout(() => {
+          alert(achievement.text)
+        }, 1000)
+      })
+    }
   }
 
   const handleAddWeather = async () => {
@@ -594,17 +921,56 @@ const AmbientVoiceOverlay = ({ onTrackCreated }) => {
       </div>
 
       <div className={styles.content}>
+        {/* 🎯 Interactive Demo Section */}
+        <InteractiveDemo onQuickAction={handleQuickAction} />
+        
+        {/* 📊 Live Stats */}
+        <LiveStats 
+          totalMessages={stats.messages}
+          totalMixes={stats.mixes}
+          avgPlacementTime={stats.avgPlacement}
+        />
+        
+        {/* 🎉 Celebration Animation */}
+        {showCelebration && (
+          <div className={styles.celebration}>
+            <FaFire className={styles.fireIcon} />
+            <span>🎉 Mix Created Successfully!</span>
+          </div>
+        )}
+        
         {/* Step 1: Input Message */}
         <div className={styles.step}>
-          <h3>1. Your Message</h3>
-          <textarea
-            className={styles.textarea}
-            placeholder="Type your message, reminder, ad, or shoutout..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            rows={4}
-            disabled={step !== 'input'}
-          />
+          <h3>1. Your Message <span style={{fontSize: '14px', color: '#1db954', fontWeight: 'normal'}}>💬 Conversational Mode</span></h3>
+          <div className={styles.inputContainer}>
+            <textarea
+              className={styles.textarea}
+              placeholder="Type your message (e.g., 'meeting at 3', 'happy birthday', 'drink water')... The AI will make it conversational! Or click the microphone to speak!"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={4}
+              disabled={step !== 'input' || isListening}
+            />
+            <button
+              className={`${styles.voiceInputBtn} ${isListening ? styles.listening : ''}`}
+              onClick={isListening ? stopListening : startListening}
+              disabled={step !== 'input' || isProcessing}
+              title={isListening ? 'Stop listening' : 'Click to speak your message'}
+            >
+              <FaMicrophone />
+              {isListening && <span className={styles.pulse}></span>}
+            </button>
+          </div>
+          {isListening && (
+            <div className={styles.listeningIndicator}>
+              🎤 Listening... Speak now!
+            </div>
+          )}
+          {conversationHistory.length > 0 && (
+            <div style={{marginTop: '10px', fontSize: '12px', color: '#b3b3b3', fontStyle: 'italic'}}>
+              💬 Conversation context: {conversationHistory.length} previous messages
+            </div>
+          )}
           
           {/* Quick Add Buttons */}
           {step === 'input' && (
@@ -660,30 +1026,64 @@ const AmbientVoiceOverlay = ({ onTrackCreated }) => {
           </div>
         </div>
 
-        {/* Step 2: Refine with AI */}
+        {/* Step 2: Get Conversational Response from AI */}
         {step === 'input' && (
           <button
             className={styles.primaryBtn}
-            onClick={handleRefineMessage}
+            onClick={() => handleConversationalResponse(message)}
             disabled={!message.trim() || isProcessing}
           >
-            {isProcessing ? 'Refining with Gemini AI...' : 'Refine with AI'}
+            {isProcessing ? 'Getting response from Gemini AI...' : 'Get AI Response'}
           </button>
         )}
 
         {step === 'refining' && (
           <div className={styles.processing}>
             <div className={styles.spinner}></div>
-            <p>Gemini AI is refining your message...</p>
+            <p>Gemini AI is generating a conversational response...</p>
           </div>
         )}
 
         {refinedMessage && step !== 'input' && (
           <div className={styles.step}>
-            <h3>Refined Message</h3>
+            <h3>AI Response</h3>
             <div className={styles.refinedBox}>
               <p>{refinedMessage}</p>
             </div>
+            
+            {/* 🎨 Creative Features Display */}
+            {(detectedEmotion || voicePersonality) && (
+              <div style={{
+                marginTop: '15px',
+                padding: '12px',
+                background: 'rgba(29, 185, 84, 0.1)',
+                borderRadius: '8px',
+                border: '1px solid rgba(29, 185, 84, 0.3)'
+              }}>
+                <h4 style={{margin: '0 0 10px 0', fontSize: '14px', color: '#1db954'}}>🎨 Creative Features</h4>
+                {detectedEmotion && (
+                  <div style={{marginBottom: '8px', fontSize: '12px'}}>
+                    <span style={{color: '#b3b3b3'}}>🎭 Emotion:</span>{' '}
+                    <span style={{color: '#fff', fontWeight: '600'}}>{detectedEmotion.emotion}</span>
+                    {' '}({Math.round(detectedEmotion.intensity * 100)}% intensity)
+                  </div>
+                )}
+                {voicePersonality && (
+                  <div style={{fontSize: '12px'}}>
+                    <span style={{color: '#b3b3b3'}}>🎨 Voice:</span>{' '}
+                    <span style={{color: '#fff', fontWeight: '600'}}>{voicePersonality.description}</span>
+                    {voicePersonality.creativeNote && (
+                      <span style={{color: '#1db954', marginLeft: '8px'}}>{voicePersonality.creativeNote}</span>
+                    )}
+                  </div>
+                )}
+                {creativeMode === 'story' && (
+                  <div style={{marginTop: '8px', fontSize: '12px', color: '#1db954', fontStyle: 'italic'}}>
+                    📖 Story mode: AI turned your message into a narrative!
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -724,6 +1124,15 @@ const AmbientVoiceOverlay = ({ onTrackCreated }) => {
                 <p className={styles.resultNote}>
                   🎼 Voice adapted to match song mood • 🎵 Intelligently placed at quiet moment
                 </p>
+                
+                {/* Visual Waveform */}
+                <VoiceVisualizer 
+                  audioUrl={voiceAudio}
+                  musicUrl={selectedSong.src}
+                  voiceStartTime={3}
+                  isPlaying={isPlaying}
+                />
+                
                 <div className={styles.resultActions}>
                   <button
                     className={styles.playBtn}

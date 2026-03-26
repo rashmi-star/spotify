@@ -148,3 +148,6 @@ function getWeatherIconFromCode(icon) {
   return iconMap[icon] || '🌤️'
 }
 
+
+
+

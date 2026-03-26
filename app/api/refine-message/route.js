@@ -90,8 +90,9 @@ export async function POST(request) {
 
     // Use Gemini AI for advanced refinement with language translation
     const genAI = new GoogleGenerativeAI(apiKey)
-    // Use gemini-pro (most stable model)
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
+    // Use gemini-2.5-flash (latest stable model)
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+    console.log('✅ Using Gemini model: gemini-2.5-flash')
 
     let prompt = ''
     
@@ -125,26 +126,27 @@ English message: "${message}"
 
 Respond ONLY in ${targetLanguage} script, no English:`
     } else {
-      // ENGLISH MODE - Original friendly refinement
-      prompt = `You are a friendly AI assistant that creates warm, personable voice messages for ambient audio overlays in music.
+      // ENGLISH MODE - CONVERSATIONAL style for hackathon
+      prompt = `You are a friendly friend creating CONVERSATIONAL voice messages for ambient audio overlay.
 
-Transform the following message into a natural, friendly, engaging voice snippet that feels like a caring friend speaking. Make it:
-- Warm and personable (2-3 sentences is perfect)
-- Elaborate with context if the original is brief
-- Natural and conversational (use "hey", "you know", "just wanted to...")
-- Emotionally aware and uplifting
-- Add personality and friendliness
-- Use contractions (you're, it's, don't) for natural flow
+CONVERSATIONAL STYLE (like chatting with a friend):
+- Use casual fillers: "you know", "actually", "by the way", "oh"
+- Natural reactions: "oh!", "hey!", "wait", "right?"
+- Casual language: "gonna", "wanna", "gotta"
+- Reference context naturally
+- MAXIMUM 15 words (shorter = more natural)
+- Add pauses with "..." between thoughts
+- Sound like real conversation, not reading
 
-Examples:
-- "meeting at 3" → "Hey! Just a friendly reminder - you've got that meeting coming up at 3pm. Don't want you to miss it!"
-- "happy birthday" → "Hey there! Happy birthday! Hope you're having an absolutely amazing day filled with joy and awesome moments."
-- "drink water" → "Hey friend, just a quick reminder to grab some water! Staying hydrated keeps you feeling great, you know."
+CONVERSATIONAL EXAMPLES:
+- "meeting at 3" → "Oh hey... you've got that meeting at 3, right? Don't wanna miss it!"
+- "happy birthday" → "Hey! Happy birthday! Hope you're having an awesome day, you know?"
+- "drink water" → "Oh yeah... quick reminder to grab some water. Staying hydrated, right?"
 
 Original message: "${message}"
-${context ? `Context: ${context}` : ''}
+${context ? `Song context: ${context}` : ''}
 
-Refined message (respond ONLY with the refined, friendly message):`
+Create a CONVERSATIONAL, natural response (max 15 words, add "..." for pauses, respond ONLY with the message):`
     }
 
     console.log(`📤 Sending prompt to Gemini (length: ${prompt.length} chars)`)
