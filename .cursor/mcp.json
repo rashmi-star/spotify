@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "spotify": {
+      "command": "node",
+      "args": ["mcp/spotify-mcp/src/index.js"],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "SPOTIFY_MCP_DEVELOPER": "1"
+      }
+    }
+  }
+}

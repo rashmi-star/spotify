@@ -1,0 +1,26 @@
+{
+  "featuredPlaylists": [
+    { "id": "fp1", "title": "Today's Top Hits", "artist": "Various Artists", "coverImage": "🔥" },
+    { "id": "fp2", "title": "RapCaviar", "artist": "Various Artists", "coverImage": "🎧" },
+    { "id": "fp3", "title": "All Out 2010s", "artist": "Various Artists", "coverImage": "📻" },
+    { "id": "fp4", "title": "Rock Classics", "artist": "Various Artists", "coverImage": "🎸" },
+    { "id": "fp5", "title": "Chill Hits", "artist": "Various Artists", "coverImage": "🌙" },
+    { "id": "fp6", "title": "Viva Latino", "artist": "Various Artists", "coverImage": "💃" }
+  ],
+  "recentlyPlayed": [
+    { "id": 1, "title": "Perfect", "artist": "Ed Sheeran", "coverImage": "🎸", "src": "/music/Edd_Sheeran_-_Perfect_(mp3.pm).mp3" },
+    { "id": 2, "title": "Story of My Life", "artist": "One Direction", "coverImage": "🎤", "src": "/music/One_Direction_-_story_my_life_(mp3.pm).mp3" },
+    { "id": 3, "title": "Tamil Song", "artist": "Tamil Artist", "coverImage": "🎵", "src": "/music/tamil.mp3" },
+    { "id": 4, "title": "Heat Waves", "artist": "Glass Animals", "coverImage": "🌊" },
+    { "id": 5, "title": "Blinding Lights", "artist": "The Weeknd", "coverImage": "✨" },
+    { "id": 6, "title": "Watermelon Sugar", "artist": "Harry Styles", "coverImage": "🍉" }
+  ],
+  "madeForYou": [
+    { "id": "mfy1", "title": "Daily Mix 1", "artist": "Made for you", "coverImage": "1" },
+    { "id": "mfy2", "title": "Daily Mix 2", "artist": "Made for you", "coverImage": "2" },
+    { "id": "mfy3", "title": "Daily Mix 3", "artist": "Made for you", "coverImage": "3" },
+    { "id": "mfy4", "title": "Daily Mix 4", "artist": "Made for you", "coverImage": "4" },
+    { "id": "mfy5", "title": "Daily Mix 5", "artist": "Made for you", "coverImage": "5" },
+    { "id": "mfy6", "title": "Daily Mix 6", "artist": "Made for you", "coverImage": "6" }
+  ]
+}
